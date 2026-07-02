@@ -1,0 +1,126 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2870
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Arial-BoldMT;\f1\fswiss\fcharset0 ArialMT;}
+{\colortbl;\red255\green255\blue255;\red5\green68\blue254;\red0\green0\blue0;\red16\green19\blue24;
+\red16\green19\blue24;}
+{\*\expandedcolortbl;;\cssrgb\c0\c38136\c99824;\cssrgb\c0\c0\c0;\cssrgb\c7843\c9412\c12157;
+\cssrgb\c7843\c9412\c12157;}
+{\*\listtable{\list\listtemplateid1\listhybrid{\listlevel\levelnfc23\levelnfcn23\leveljc0\leveljcn0\levelfollow0\levelstartat0\levelspace360\levelindent0{\*\levelmarker \{hyphen\}}{\leveltext\leveltemplateid1\'01\uc0\u8259 ;}{\levelnumbers;}\fi-360\li720\lin720 }{\listname ;}\listid1}}
+{\*\listoverridetable{\listoverride\listid1\listoverridecount0\ls1}}
+\paperw11900\paperh16840\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\deftab720
+\pard\pardeftab720\sa280\partightenfactor0
+
+\f0\b\fs28 \cf2 \expnd0\expndtw0\kerning0
+Packet tracer 12.5.13 answers: \cf0 \
+\ul Part 1: Verify Switching Technologies\ulnone \
+\pard\pardeftab720\sa240\partightenfactor0
+
+\fs24 \cf0 c. What ports are currently assigned to VLAN 10?
+\f1\b0 \uc0\u8232 Fa0/3 and Fa0/4. (Fa0/3 is PC1's port; Fa0/4 was already in VLAN 10 as well.) Note that R1's connection to S1 (Gig0/1) was still in VLAN 1 (default) at this point \'97 the mismatch identified in step e.\
+
+\f0\b d. Does the PC currently have an IP address assigned?
+\f1\b0 \uc0\u8232 No. PC1 had an APIPA address (169.254.171.125), indicating it failed to receive a response from the DHCP server. This was because R1's G0/0/1 interface (connected via S1's Gig0/1) was in VLAN 1 instead of VLAN 10, so PC1 and its DHCP server (R1) were not on the same VLAN/subnet.\
+
+\f0\b e. (Fix applied)
+\f1\b0  Moved S1's Gig0/1 interface into VLAN 10 and enabled PortFast:\
+\pard\pardeftab720\partightenfactor0
+\cf4 S1(config)# interface g0/1\
+S1(config-if)# switchport access vlan 10\
+S1(config-if)# spanning-tree portfast\
+\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\b \cf0 f.
+\f1\b0  After the VLAN fix, PC1 successfully renewed its DHCP address and pinged the TFTP Server successfully.\
+
+\f0\b g. Were there any problems with EtherChannel?
+\f1\b0 \uc0\u8232 Yes. On S3, Port-channel 1 (Po1) showed status 
+\f0\b SD (down)
+\f1\b0  with no ports assigned to it, while S2's side of the same channel group (Fa0/1, Fa0/2) was up and functioning. This broke the EtherChannel link between S2 and S3. S3's Port-channel 3 (with S4) was working correctly.\
+
+\f0\b h. (Fix applied)
+\f1\b0  Added the missing ports to S3's channel-group 1:\
+\pard\pardeftab720\partightenfactor0
+\cf0 \
+\pard\pardeftab720\partightenfactor0
+\cf4 S3(config)# interface range f0/1-2\
+S3(config-if-range)# channel-group 1 mode on\
+\pard\pardeftab720\sa240\partightenfactor0
+\cf0 After this, Po1 on S3 came up correctly (SU status), matching S2.\
+
+\f0\b i. Were there any issues with trunking?
+\f1\b0 \uc0\u8232 Yes. On S2, interface Gig0/1 was trunking with 
+\f0\b native VLAN 1
+\f1\b0 , while every other trunk link in the topology (Po1/Po2 on S2, Po1/Po3 on S3, Po2/Po3 on S4) used 
+\f0\b native VLAN 99
+\f1\b0 . This native VLAN mismatch could cause VLAN 1 traffic to leak untagged and would trigger CDP native VLAN mismatch warnings.\
+
+\f0\b j. (Fix applied)
+\f1\b0  Corrected the native VLAN on S2's Gig0/1:\
+\pard\pardeftab720\partightenfactor0
+\cf0 \
+\pard\pardeftab720\partightenfactor0
+\cf4 S2(config)# interface g0/1\
+S2(config-if)# switchport trunk native vlan 99\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\b \cf0 k-m. Spanning Tree root bridge status
+\f1\b0 \uc0\u8232 S2 was initially not configured as the root bridge for any VLAN (
+\fs26 show spanning-tree summary totals
+\fs24  showed "Root bridge for:" as blank). This was corrected using:\
+\pard\pardeftab720\partightenfactor0
+\cf0 \
+\pard\pardeftab720\partightenfactor0
+\cf4 S2(config)# spanning-tree vlan 1-1005 root primary\
+\pard\pardeftab720\sa240\partightenfactor0
+\cf0 After the fix, S2 was confirmed as root bridge for: default, V30, V40, V50, and Native.\
+\
+\pard\pardeftab720\sa280\partightenfactor0
+
+\f0\b\fs28 \cf0 \ul \ulc0 \outl0\strokewidth0 \strokec3 Part 2: Verify DHCP\ulnone \
+\pard\pardeftab720\sa240\partightenfactor0
+
+\fs24 \cf0 Requirements:
+\f1\b0  R1 is the DHCP server for its own LAN (PC1). R3 is the DHCP server for all 3 LANs attached to it (PC2, PC3, PC4).\
+
+\f0\b a. Do they all have correct addressing?
+\f1\b0 \uc0\u8232 No. PC2, PC3, and PC4 all received valid IPv4 addresses in their correct subnets via DHCP (PC2: 192.168.30.10, PC3: 192.168.40.11, PC4: 192.168.50.10), but 
+\f0\b PC3 and PC4 both received the wrong default gateway
+\f1\b0  \'97 both showed 192.168.30.1 instead of their own subnet's actual gateway.\
+
+\f0\b b. Are there any issues with the DHCP configurations?
+\f1\b0 \uc0\u8232 Yes. On R3, the DHCP pools LAN40 and LAN50 both had their 
+\fs26 default-router
+\fs24  line incorrectly pointing to 192.168.30.1 (a copy-paste error from the LAN30 pool) instead of their own correct gateway addresses.\
+
+\f0\b (Fix applied):
+\f1\b0 \
+\pard\pardeftab720\partightenfactor0
+\cf0 \
+\pard\pardeftab720\partightenfactor0
+\cf5 \strokec5 R3(config)# ip dhcp pool LAN40\
+R3(dhcp-config)# default-router 192.168.40.1\
+\
+R3(config)# ip dhcp pool LAN50\
+R3(dhcp-config)# default-router 192.168.50.1\
+\
+\
+\pard\pardeftab720\sa240\partightenfactor0
+
+\f0\b \cf0 \strokec3 c. Were you able to ping all IPv4 addresses?
+\f1\b0 \uc0\u8232 After renewing DHCP on PC3 and PC4 with corrected gateways, connectivity was tested across the network. PC1, PC2, and PC4 pinged successfully across all subnets. However, ping from PC1 to PC3 (192.168.40.11) initially failed.\
+
+\f0\b Troubleshooting PC1 \uc0\u8594  PC3 connectivity issue:
+\f1\b0 \uc0\u8232 This was investigated in detail and traced back to configuration gaps that were part of Parts 3 and 4 requirements, not the DHCP fix itself:\
+\pard\tx220\tx720\pardeftab720\li720\fi-720\partightenfactor0
+\ls1\ilvl0\cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8259 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 R3's OSPF process was missing passive-interface configuration on G0/1.30, G0/1.40, and G0/1.50 (LAN-facing subinterfaces should not send OSPF hellos toward end-user subnets).\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8259 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 Leftover OSPF cost values (648) remained on R1's G0/0/0 and R3's G0/1/0 interfaces from the original serial-based configuration, affecting path selection.\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8259 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 R2 was missing 
+\fs26 default-information originate
+\fs24  under both OSPFv4 and OSPFv6 processes.\
+\ls1\ilvl0\kerning1\expnd0\expndtw0 \outl0\strokewidth0 {\listtext	\uc0\u8259 	}\expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec3 R2's Serial0/0/0 interface was not set as a NAT inside interface.\
+}
